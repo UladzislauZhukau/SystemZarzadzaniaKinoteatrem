@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16
+    container_name: kino_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kinoteatr}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+    ports:
+      # Host port 5433 -> container 5432 (avoids clashing with a local Postgres on 5432)
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-kinoteatr}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: kino_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-secret}@db:5432/${POSTGRES_DB:-kinoteatr}
+    ports:
+      # Host port 8001 -> container 8000 (avoids clashing with something already on 8000)
+      - "8001:8000"
+
+  frontend:
+    build: ./frontend
+    container_name: kino_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:8001
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
