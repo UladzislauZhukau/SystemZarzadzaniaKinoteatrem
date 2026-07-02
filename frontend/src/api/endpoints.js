@@ -28,6 +28,8 @@ export const deleteMovieReview = (movieId, reviewId) =>
 // Halls
 export const getHalls = () => client.get("/halls").then((r) => r.data);
 export const createHall = (data) => client.post("/halls", data).then((r) => r.data);
+export const updateHall = (id, data) =>
+  client.put(`/halls/${id}`, data).then((r) => r.data);
 export const deleteHall = (id) => client.delete(`/halls/${id}`);
 
 // Screenings
@@ -43,6 +45,8 @@ export const getSeatmap = (id) =>
   client.get(`/screenings/${id}/seatmap`).then((r) => r.data);
 export const createScreening = (data) =>
   client.post("/screenings", data).then((r) => r.data);
+export const updateScreening = (id, data) =>
+  client.put(`/screenings/${id}`, data).then((r) => r.data);
 export const deleteScreening = (id) => client.delete(`/screenings/${id}`);
 
 // Reservations

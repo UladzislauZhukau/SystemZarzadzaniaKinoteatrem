@@ -10,6 +10,9 @@ import {
   getMovies,
   getScreenings,
   lookupMovie,
+  updateHall,
+  updateMovie,
+  updateScreening,
 } from "../api/endpoints";
 import "../styles/AdminDashboard.css";
 
@@ -26,6 +29,7 @@ const EMPTY_MOVIE = {
 function MoviesTab() {
   const [movies, setMovies] = useState([]);
   const [form, setForm] = useState(EMPTY_MOVIE);
+  const [editingId, setEditingId] = useState(null);
   const [lookupError, setLookupError] = useState("");
   const [searching, setSearching] = useState(false);
 
@@ -33,6 +37,26 @@ function MoviesTab() {
   useEffect(() => {
     load();
   }, []);
+
+  const resetForm = () => {
+    setForm(EMPTY_MOVIE);
+    setEditingId(null);
+    setLookupError("");
+  };
+
+  const startEdit = (m) => {
+    setEditingId(m.id);
+    setLookupError("");
+    setForm({
+      title: m.title || "",
+      genre: m.genre || "",
+      description: m.description || "",
+      duration_min: m.duration_min ?? 120,
+      rating: m.rating ?? 0,
+      poster_url: m.poster_url || "",
+      trailer_url: m.trailer_url || "",
+    });
+  };
 
   const handleLookup = async () => {
     if (!form.title.trim()) {
@@ -63,20 +87,24 @@ function MoviesTab() {
 
   const submit = async (e) => {
     e.preventDefault();
-    await createMovie({
+    const payload = {
       ...form,
       duration_min: Number(form.duration_min),
       rating: Number(form.rating),
-    });
-    setForm(EMPTY_MOVIE);
-    setLookupError("");
+    };
+    if (editingId) {
+      await updateMovie(editingId, payload);
+    } else {
+      await createMovie(payload);
+    }
+    resetForm();
     load();
   };
 
   return (
     <div>
       <form className="form" onSubmit={submit}>
-        <h3>Add film</h3>
+        <h3>{editingId ? `Edit film #${editingId}` : "Add film"}</h3>
         <div style={{ display: "flex", gap: 8 }}>
           <input
             placeholder="Title"
@@ -135,7 +163,14 @@ function MoviesTab() {
           value={form.trailer_url}
           onChange={(e) => setForm({ ...form, trailer_url: e.target.value })}
         />
-        <button className="btn">Add</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn">{editingId ? "Save changes" : "Add"}</button>
+          {editingId && (
+            <button type="button" className="btn secondary" onClick={resetForm}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       <table>
@@ -165,7 +200,13 @@ function MoviesTab() {
               <td>{m.title}</td>
               <td>{m.genre}</td>
               <td>{m.duration_min} min</td>
-              <td>
+              <td style={{ display: "flex", gap: 6 }}>
+                <button
+                  className="btn small secondary"
+                  onClick={() => startEdit(m)}
+                >
+                  Edit
+                </button>
                 <button
                   className="btn small danger"
                   onClick={() => deleteMovie(m.id).then(load)}
@@ -181,50 +222,95 @@ function MoviesTab() {
   );
 }
 
+const EMPTY_HALL = { name: "", rows: 5, seats_per_row: 8, capacity: 0 };
+
 function HallsTab() {
   const [halls, setHalls] = useState([]);
-  const [form, setForm] = useState({ name: "", rows: 5, seats_per_row: 8 });
+  const [form, setForm] = useState(EMPTY_HALL);
+  const [editingId, setEditingId] = useState(null);
 
   const load = () => getHalls().then(setHalls);
   useEffect(() => {
     load();
   }, []);
 
+  const resetForm = () => {
+    setForm(EMPTY_HALL);
+    setEditingId(null);
+  };
+
+  const startEdit = (h) => {
+    setEditingId(h.id);
+    setForm({ ...EMPTY_HALL, name: h.name, capacity: h.capacity });
+  };
+
   const submit = async (e) => {
     e.preventDefault();
-    await createHall({
-      name: form.name,
-      capacity: 0,
-      rows: Number(form.rows),
-      seats_per_row: Number(form.seats_per_row),
-    });
-    setForm({ name: "", rows: 5, seats_per_row: 8 });
+    if (editingId) {
+      // The backend only updates name/capacity; seats aren't regenerated.
+      await updateHall(editingId, {
+        name: form.name,
+        capacity: Number(form.capacity),
+      });
+    } else {
+      await createHall({
+        name: form.name,
+        capacity: 0,
+        rows: Number(form.rows),
+        seats_per_row: Number(form.seats_per_row),
+      });
+    }
+    resetForm();
     load();
   };
 
   return (
     <div>
       <form className="form" onSubmit={submit}>
-        <h3>Add hall</h3>
+        <h3>{editingId ? `Edit hall #${editingId}` : "Add hall"}</h3>
         <input
           placeholder="Hall name"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           required
         />
-        <label>Number of rows</label>
-        <input
-          type="number"
-          value={form.rows}
-          onChange={(e) => setForm({ ...form, rows: e.target.value })}
-        />
-        <label>Seats per row</label>
-        <input
-          type="number"
-          value={form.seats_per_row}
-          onChange={(e) => setForm({ ...form, seats_per_row: e.target.value })}
-        />
-        <button className="btn">Add (with seats)</button>
+        {editingId ? (
+          <>
+            <label>Capacity</label>
+            <input
+              type="number"
+              value={form.capacity}
+              onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+            />
+          </>
+        ) : (
+          <>
+            <label>Number of rows</label>
+            <input
+              type="number"
+              value={form.rows}
+              onChange={(e) => setForm({ ...form, rows: e.target.value })}
+            />
+            <label>Seats per row</label>
+            <input
+              type="number"
+              value={form.seats_per_row}
+              onChange={(e) =>
+                setForm({ ...form, seats_per_row: e.target.value })
+              }
+            />
+          </>
+        )}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn">
+            {editingId ? "Save changes" : "Add (with seats)"}
+          </button>
+          {editingId && (
+            <button type="button" className="btn secondary" onClick={resetForm}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       <table>
@@ -242,7 +328,13 @@ function HallsTab() {
               <td>{h.id}</td>
               <td>{h.name}</td>
               <td>{h.capacity}</td>
-              <td>
+              <td style={{ display: "flex", gap: 6 }}>
+                <button
+                  className="btn small secondary"
+                  onClick={() => startEdit(h)}
+                >
+                  Edit
+                </button>
                 <button
                   className="btn small danger"
                   onClick={() => deleteHall(h.id).then(load)}
@@ -258,16 +350,30 @@ function HallsTab() {
   );
 }
 
+const EMPTY_SCREENING = {
+  movie_id: "",
+  hall_id: "",
+  start_time: "",
+  ticket_price: 30,
+};
+
+// Format an ISO timestamp as the local "YYYY-MM-DDTHH:mm" value a
+// datetime-local input expects.
+function toDatetimeLocal(iso) {
+  const d = new Date(iso);
+  const pad = (n) => String(n).padStart(2, "0");
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  );
+}
+
 function ScreeningsTab() {
   const [screenings, setScreenings] = useState([]);
   const [movies, setMovies] = useState([]);
   const [halls, setHalls] = useState([]);
-  const [form, setForm] = useState({
-    movie_id: "",
-    hall_id: "",
-    start_time: "",
-    ticket_price: 30,
-  });
+  const [form, setForm] = useState(EMPTY_SCREENING);
+  const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
 
   const load = () => getScreenings().then(setScreenings);
@@ -277,27 +383,54 @@ function ScreeningsTab() {
     getHalls().then(setHalls);
   }, []);
 
+  const resetForm = () => {
+    setForm(EMPTY_SCREENING);
+    setEditingId(null);
+    setError("");
+  };
+
+  const startEdit = (s) => {
+    setEditingId(s.id);
+    setError("");
+    setForm({
+      movie_id: String(s.movie_id),
+      hall_id: String(s.hall_id),
+      start_time: toDatetimeLocal(s.start_time),
+      ticket_price: s.ticket_price,
+    });
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setError("");
+    const payload = {
+      movie_id: Number(form.movie_id),
+      hall_id: Number(form.hall_id),
+      start_time: new Date(form.start_time).toISOString(),
+      ticket_price: Number(form.ticket_price),
+    };
     try {
-      await createScreening({
-        movie_id: Number(form.movie_id),
-        hall_id: Number(form.hall_id),
-        start_time: new Date(form.start_time).toISOString(),
-        ticket_price: Number(form.ticket_price),
-      });
-      setForm({ movie_id: "", hall_id: "", start_time: "", ticket_price: 30 });
+      if (editingId) {
+        await updateScreening(editingId, payload);
+      } else {
+        await createScreening(payload);
+      }
+      resetForm();
       load();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to add the screening.");
+      setError(
+        err.response?.data?.detail ||
+          (editingId
+            ? "Failed to update the screening."
+            : "Failed to add the screening.")
+      );
     }
   };
 
   return (
     <div>
       <form className="form" onSubmit={submit}>
-        <h3>Add screening</h3>
+        <h3>{editingId ? `Edit screening #${editingId}` : "Add screening"}</h3>
         {error && <div className="alert error">{error}</div>}
         <select
           value={form.movie_id}
@@ -337,7 +470,14 @@ function ScreeningsTab() {
           value={form.ticket_price}
           onChange={(e) => setForm({ ...form, ticket_price: e.target.value })}
         />
-        <button className="btn">Add</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn">{editingId ? "Save changes" : "Add"}</button>
+          {editingId && (
+            <button type="button" className="btn secondary" onClick={resetForm}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       <table>
@@ -359,7 +499,13 @@ function ScreeningsTab() {
               <td>{s.hall.name}</td>
               <td>{new Date(s.start_time).toLocaleString("en-US")}</td>
               <td>{s.ticket_price} PLN</td>
-              <td>
+              <td style={{ display: "flex", gap: 6 }}>
+                <button
+                  className="btn small secondary"
+                  onClick={() => startEdit(s)}
+                >
+                  Edit
+                </button>
                 <button
                   className="btn small danger"
                   onClick={() => deleteScreening(s.id).then(load)}

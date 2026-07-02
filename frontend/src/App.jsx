@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import StarBackground from "./components/StarBackground";
+import CurtainIntro from "./components/CurtainIntro";
 import ProtectedRoute from "./components/ProtectedRoute";
 import HomePage from "./pages/HomePage";
 import MoviesPage from "./pages/MoviesPage";
@@ -15,6 +16,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 export default function App() {
   return (
     <>
+      <CurtainIntro />
       <StarBackground />
       <Navbar />
       <Routes>

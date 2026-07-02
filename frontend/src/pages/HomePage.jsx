@@ -106,14 +106,6 @@ export default function HomePage() {
         <p className="muted">
           Browse the schedule, reserve seats, and manage the cinema all in one place.
         </p>
-        <div style={{ marginTop: 24, display: "flex", gap: 12, justifyContent: "center" }}>
-          <Link to="/movies" className="btn">
-            Browse films
-          </Link>
-          <Link to="/screenings" className="btn secondary">
-            Showtimes
-          </Link>
-        </div>
       </div>
 
       <section className="home-section">

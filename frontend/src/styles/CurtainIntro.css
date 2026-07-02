@@ -1,0 +1,79 @@
+/* One-shot intro: two velvet curtain panels slide apart to reveal the app.
+   Timeline (~3.8s): brief hold, curtains part slowly, whole overlay fades out. */
+
+.curtain-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+  animation: curtain-fade 0.4s ease-in 3.4s forwards;
+}
+
+.curtain-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 51%; /* slight overlap in the middle so no gap shows at the seam */
+  background: repeating-linear-gradient(
+      90deg,
+      #4a0206 0px,
+      #7d0a11 22px,
+      #b0141d 44px,
+      #7d0a11 66px,
+      #4a0206 88px
+    ),
+    linear-gradient(90deg, #3a0105, #6e0910);
+  background-blend-mode: multiply;
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.6);
+  will-change: transform;
+}
+
+/* Top scalloped valance shadow + a subtle sheen down each fold */
+.curtain-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.45),
+    rgba(0, 0, 0, 0) 18%
+  );
+}
+
+.curtain-left {
+  left: 0;
+  transform-origin: left center;
+  animation: curtain-open-left 2.6s cubic-bezier(0.7, 0, 0.3, 1) 0.7s forwards;
+}
+
+.curtain-right {
+  right: 0;
+  transform-origin: right center;
+  animation: curtain-open-right 2.6s cubic-bezier(0.7, 0, 0.3, 1) 0.7s forwards;
+}
+
+@keyframes curtain-open-left {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes curtain-open-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes curtain-fade {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curtain-intro {
+    display: none;
+  }
+}
