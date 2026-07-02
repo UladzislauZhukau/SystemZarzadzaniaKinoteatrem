@@ -239,6 +239,78 @@ th {
   text-align: center;
   padding: 60px 20px;
 }
+
+/* Home page sections */
+.home-section {
+  margin-top: 40px;
+}
+.home-section h2 {
+  margin: 0 0 16px;
+}
+
+/* Auto-scrolling film ribbon (marquee) */
+.marquee {
+  overflow: hidden;
+  width: 100%;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 5%,
+    #000 95%,
+    transparent
+  );
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 115s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+  .marquee {
+    overflow-x: auto;
+  }
+}
+.poster-card {
+  flex: 0 0 auto;
+  width: 170px;
+  margin-right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.poster-card .movie-poster {
+  height: 250px;
+  margin-bottom: 0;
+  transition: transform 0.15s;
+}
+.poster-card:hover .movie-poster {
+  transform: scale(1.04);
+}
+.poster-card .poster-title {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.poster-card:hover .poster-title {
+  color: var(--text);
+}
 .hero h1 {
   font-size: 2.6rem;
   margin-bottom: 10px;
