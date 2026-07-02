@@ -19,12 +19,21 @@ export default function HomePage() {
     getScreenings().then(setScreenings).catch(() => {});
   }, []);
 
-  // Closest upcoming screenings (backend returns them sorted by start_time asc).
+  // Closest upcoming screenings, one per film (its soonest showtime). The
+  // backend returns them sorted by start_time asc, so the first occurrence of
+  // each film is already its earliest.
   const upcoming = useMemo(() => {
     const now = Date.now();
-    return screenings
-      .filter((s) => new Date(s.start_time).getTime() >= now)
-      .slice(0, 12);
+    const seen = new Set();
+    const result = [];
+    for (const s of screenings) {
+      if (new Date(s.start_time).getTime() < now) continue;
+      if (seen.has(s.movie.id)) continue;
+      seen.add(s.movie.id);
+      result.push(s);
+      if (result.length >= 12) break;
+    }
+    return result;
   }, [screenings]);
 
   // Upcoming row: an infinitely looping carousel driven by the arrow buttons.

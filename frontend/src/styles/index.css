@@ -151,6 +151,36 @@ th {
   color: #86efac;
 }
 
+/* Filter bar (shared by the movies & screenings pages) */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin: 16px 0 24px;
+}
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.filter-field.grow {
+  flex: 1 1 220px;
+}
+.filter-bar input,
+.filter-bar select {
+  width: 100%;
+  min-width: 150px;
+}
+.filter-bar .btn.secondary {
+  height: 40px;
+}
+.filter-count {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
 /* Utilities */
 .muted {
   color: var(--muted);
