@@ -239,6 +239,113 @@ def test_movie_lookup_not_found(client, seeded, monkeypatch):
     assert resp.status_code == 404
 
 
+def test_screening_overlap_rejected(client, seeded):
+    from datetime import timedelta
+
+    admin = auth_headers(client, "admin@example.com", "admin123")
+    screening = seeded["screening"]  # movie is 148 min long
+
+    # New screening in the same hall starting 1h in, while the first is still
+    # running, must be rejected.
+    overlap_start = screening.start_time + timedelta(minutes=60)
+    resp = client.post(
+        "/screenings",
+        json={
+            "movie_id": seeded["movie"].id,
+            "hall_id": seeded["hall"].id,
+            "start_time": overlap_start.isoformat(),
+            "ticket_price": 25,
+        },
+        headers=admin,
+    )
+    assert resp.status_code == 400, resp.text
+
+
+def test_screening_non_overlap_allowed(client, seeded):
+    from datetime import timedelta
+
+    admin = auth_headers(client, "admin@example.com", "admin123")
+    screening = seeded["screening"]
+
+    # Starting 3h later (after the 148-min film ends) is fine.
+    later_start = screening.start_time + timedelta(hours=3)
+    resp = client.post(
+        "/screenings",
+        json={
+            "movie_id": seeded["movie"].id,
+            "hall_id": seeded["hall"].id,
+            "start_time": later_start.isoformat(),
+            "ticket_price": 25,
+        },
+        headers=admin,
+    )
+    assert resp.status_code == 201, resp.text
+
+
+def test_screening_accepts_utc_aware_timestamp(client, seeded):
+    from datetime import timezone, timedelta
+
+    admin = auth_headers(client, "admin@example.com", "admin123")
+    # A different day, sent as a timezone-aware UTC string exactly like the
+    # admin UI does via new Date(...).toISOString() ("...Z"). Must not clash
+    # with the naive seeded screening.
+    start = (seeded["screening"].start_time + timedelta(days=1)).replace(
+        tzinfo=timezone.utc
+    )
+    resp = client.post(
+        "/screenings",
+        json={
+            "movie_id": seeded["movie"].id,
+            "hall_id": seeded["hall"].id,
+            "start_time": start.isoformat(),
+            "ticket_price": 20,
+        },
+        headers=admin,
+    )
+    assert resp.status_code == 201, resp.text
+
+
+def test_screening_overlap_allowed_in_other_hall(client, seeded, db_session):
+    from datetime import timezone
+
+    from app.models.hall import Hall
+
+    other_hall = Hall(name="Sala 2", capacity=4)
+    db_session.add(other_hall)
+    db_session.commit()
+
+    admin = auth_headers(client, "admin@example.com", "admin123")
+    screening = seeded["screening"]
+
+    # Exact same instant as the seeded screening, sent as a timezone-aware UTC
+    # string like the admin UI does, but in a different hall -> allowed.
+    start = screening.start_time.replace(tzinfo=timezone.utc)
+    resp = client.post(
+        "/screenings",
+        json={
+            "movie_id": seeded["movie"].id,
+            "hall_id": other_hall.id,
+            "start_time": start.isoformat(),
+            "ticket_price": 25,
+        },
+        headers=admin,
+    )
+    assert resp.status_code == 201, resp.text
+
+    # ...while the SAME hall at that instant is still rejected.
+    resp = client.post(
+        "/screenings",
+        json={
+            "movie_id": seeded["movie"].id,
+            "hall_id": seeded["hall"].id,
+            "start_time": start.isoformat(),
+            "ticket_price": 25,
+        },
+        headers=admin,
+    )
+    assert resp.status_code == 400, resp.text
+
+
 def test_post_review_requires_auth(client, seeded):
     movie = seeded["movie"]
     resp = client.post(f"/movies/{movie.id}/reviews", json={"rating": 8})
@@ -305,6 +412,103 @@ def test_review_average_across_users(client, seeded):
     listing = client.get(f"/movies/{movie.id}/reviews").json()
     assert listing["count"] == 2
     assert listing["average"] == 8.0
+
+
+def _post_review(client, movie_id, headers, rating=7, comment="Original"):
+    resp = client.post(
+        f"/movies/{movie_id}/reviews",
+        json={"rating": rating, "comment": comment},
+        headers=headers,
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()
+
+
+def test_author_can_edit_own_review(client, seeded):
+    movie = seeded["movie"]
+    jan = auth_headers(client, "jan@example.com", "test123")
+    review = _post_review(client, movie.id, jan, rating=6, comment="Meh")
+
+    resp = client.put(
+        f"/movies/{movie.id}/reviews/{review['id']}",
+        json={"rating": 10, "comment": "Actually great"},
+        headers=jan,
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["rating"] == 10
+    assert body["comment"] == "Actually great"
+    assert body["author_name"] == "Jan Kowalski"
+
+
+def test_author_can_delete_own_review(client, seeded):
+    movie = seeded["movie"]
+    jan = auth_headers(client, "jan@example.com", "test123")
+    review = _post_review(client, movie.id, jan)
+
+    resp = client.delete(
+        f"/movies/{movie.id}/reviews/{review['id']}", headers=jan
+    )
+    assert resp.status_code == 204, resp.text
+    assert client.get(f"/movies/{movie.id}/reviews").json()["count"] == 0
+
+
+def test_non_author_cannot_edit_or_delete(client, seeded, db_session):
+    from app.core.security import hash_password
+    from app.models.customer import Customer
+
+    # Another regular customer who did NOT write the review.
+    other = Customer(
+        name="Other", email="other@example.com",
+        hashed_password=hash_password("pw12345"), role="customer",
+    )
+    db_session.add(other)
+    db_session.commit()
+
+    movie = seeded["movie"]
+    jan = auth_headers(client, "jan@example.com", "test123")
+    review = _post_review(client, movie.id, jan)
+
+    other_h = auth_headers(client, "other@example.com", "pw12345")
+    assert client.put(
+        f"/movies/{movie.id}/reviews/{review['id']}",
+        json={"rating": 1}, headers=other_h,
+    ).status_code == 403
+    assert client.delete(
+        f"/movies/{movie.id}/reviews/{review['id']}", headers=other_h
+    ).status_code == 403
+
+
+def test_admin_can_edit_and_delete_any_review(client, seeded):
+    movie = seeded["movie"]
+    jan = auth_headers(client, "jan@example.com", "test123")
+    admin = auth_headers(client, "admin@example.com", "admin123")
+    review = _post_review(client, movie.id, jan, comment="By Jan")
+
+    # Admin edits someone else's review; author_name stays the original author.
+    resp = client.put(
+        f"/movies/{movie.id}/reviews/{review['id']}",
+        json={"rating": 3, "comment": "Moderated"},
+        headers=admin,
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["author_name"] == "Jan Kowalski"
+
+    # Admin deletes it.
+    resp = client.delete(
+        f"/movies/{movie.id}/reviews/{review['id']}", headers=admin
+    )
+    assert resp.status_code == 204
+    assert client.get(f"/movies/{movie.id}/reviews").json()["count"] == 0
+
+
+def test_edit_missing_review_returns_404(client, seeded):
+    movie = seeded["movie"]
+    jan = auth_headers(client, "jan@example.com", "test123")
+    resp = client.put(
+        f"/movies/{movie.id}/reviews/9999", json={"rating": 5}, headers=jan
+    )
+    assert resp.status_code == 404
 
 
 def test_cancel_reservation(client, seeded):

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import "../styles/RegisterPage.css";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -17,17 +18,17 @@ export default function RegisterPage() {
       await register(form);
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.detail || "Blad rejestracji.");
+      setError(err.response?.data?.detail || "Registration error.");
     }
   };
 
   return (
     <div className="container">
-      <h2>Rejestracja</h2>
+      <h2>Register</h2>
       {error && <div className="alert error">{error}</div>}
       <form className="form" onSubmit={handleSubmit}>
         <div>
-          <label>Imie i nazwisko</label>
+          <label>Full name</label>
           <input value={form.name} onChange={update("name")} required />
         </div>
         <div>
@@ -35,11 +36,11 @@ export default function RegisterPage() {
           <input type="email" value={form.email} onChange={update("email")} required />
         </div>
         <div>
-          <label>Telefon</label>
+          <label>Phone</label>
           <input value={form.phone} onChange={update("phone")} />
         </div>
         <div>
-          <label>Haslo</label>
+          <label>Password</label>
           <input
             type="password"
             value={form.password}
@@ -48,11 +49,11 @@ export default function RegisterPage() {
           />
         </div>
         <button className="btn" type="submit">
-          Zarejestruj
+          Register
         </button>
       </form>
       <p className="muted" style={{ marginTop: 12 }}>
-        Masz juz konto? <Link to="/login">Zaloguj sie</Link>
+        Already have an account? <Link to="/login">Sign in</Link>
       </p>
     </div>
   );

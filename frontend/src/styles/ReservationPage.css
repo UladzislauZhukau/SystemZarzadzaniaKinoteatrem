@@ -1,0 +1,89 @@
+/* Reservation page: hall view (seat map + checkout side panel) */
+.reserve-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 800px) {
+  .reserve-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.screen {
+  margin: 8px auto 28px;
+  width: 70%;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 6px;
+  padding: 8px 0;
+  border-top-left-radius: 50% 18px;
+  border-top-right-radius: 50% 18px;
+  background: linear-gradient(
+    to bottom,
+    rgba(229, 236, 245, 0.35),
+    rgba(229, 236, 245, 0)
+  );
+  border-top: 2px solid rgba(229, 236, 245, 0.5);
+  box-shadow: 0 -6px 24px rgba(229, 236, 245, 0.15);
+}
+
+/* Seat map */
+.seatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+  align-items: center;
+}
+.seat-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+.seat {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.seat.selected {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.seat.taken {
+  background: #444;
+  color: #777;
+  cursor: not-allowed;
+}
+.seat:disabled {
+  cursor: not-allowed;
+}
+
+.legend {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-box {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  padding: 0;
+  cursor: default;
+}

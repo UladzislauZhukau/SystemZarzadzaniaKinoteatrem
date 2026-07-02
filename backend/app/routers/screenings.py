@@ -79,7 +79,10 @@ def seatmap(screening_id: int, db: Session = Depends(get_db)):
 @router.post("", response_model=ScreeningRead, status_code=status.HTTP_201_CREATED,
              dependencies=[Depends(require_admin)])
 def create_screening(data: ScreeningCreate, db: Session = Depends(get_db)):
-    return screening_crud.create_screening(db, data)
+    try:
+        return screening_crud.create_screening(db, data)
+    except screening_crud.ScreeningError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.put("/{screening_id}", response_model=ScreeningRead,
@@ -88,7 +91,10 @@ def update_screening(screening_id: int, data: ScreeningUpdate, db: Session = Dep
     screening = screening_crud.get_screening(db, screening_id)
     if not screening:
         raise HTTPException(status_code=404, detail="Screening not found")
-    return screening_crud.update_screening(db, screening, data)
+    try:
+        return screening_crud.update_screening(db, screening, data)
+    except screening_crud.ScreeningError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.delete("/{screening_id}", status_code=status.HTTP_204_NO_CONTENT,

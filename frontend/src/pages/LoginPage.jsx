@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import "../styles/LoginPage.css";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -16,13 +17,13 @@ export default function LoginPage() {
       await login(email, password);
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.detail || "Blad logowania.");
+      setError(err.response?.data?.detail || "Login error.");
     }
   };
 
   return (
     <div className="container">
-      <h2>Logowanie</h2>
+      <h2>Sign in</h2>
       {error && <div className="alert error">{error}</div>}
       <form className="form" onSubmit={handleSubmit}>
         <div>
@@ -35,7 +36,7 @@ export default function LoginPage() {
           />
         </div>
         <div>
-          <label>Haslo</label>
+          <label>Password</label>
           <input
             type="password"
             value={password}
@@ -44,11 +45,11 @@ export default function LoginPage() {
           />
         </div>
         <button className="btn" type="submit">
-          Zaloguj
+          Sign in
         </button>
       </form>
       <p className="muted" style={{ marginTop: 12 }}>
-        Nie masz konta? <Link to="/register">Zarejestruj sie</Link>
+        Don't have an account? <Link to="/register">Register</Link>
       </p>
     </div>
   );

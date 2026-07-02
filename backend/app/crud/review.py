@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.models.customer import Customer
 from app.models.review import Review
-from app.schemas.review import MovieReviews, ReviewCreate, ReviewRead
+from app.schemas.review import MovieReviews, ReviewCreate, ReviewRead, ReviewUpdate
 
 
 def get_reviews(db: Session, movie_id: int) -> MovieReviews:
@@ -24,6 +24,7 @@ def get_reviews(db: Session, movie_id: int) -> MovieReviews:
             comment=review.comment,
             created_at=review.created_at,
             author_name=author_name,
+            customer_id=review.customer_id,
         )
         for review, author_name in rows
     ]
@@ -32,6 +33,23 @@ def get_reviews(db: Session, movie_id: int) -> MovieReviews:
     average = round(sum(item.rating for item in items) / count, 2) if count else 0.0
 
     return MovieReviews(average=average, count=count, items=items)
+
+
+def get_review(db: Session, review_id: int) -> Review | None:
+    return db.get(Review, review_id)
+
+
+def update_review(db: Session, review: Review, data: ReviewUpdate) -> Review:
+    review.rating = data.rating
+    review.comment = data.comment
+    db.commit()
+    db.refresh(review)
+    return review
+
+
+def delete_review(db: Session, review: Review) -> None:
+    db.delete(review)
+    db.commit()
 
 
 def upsert_review(

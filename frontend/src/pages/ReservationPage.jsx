@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import CheckoutPanel from "../components/CheckoutPanel";
 import { getScreening, getSeatmap } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import "../styles/ReservationPage.css";
 
 export default function ReservationPage() {
   const { screeningId } = useParams();
@@ -31,7 +32,7 @@ export default function ReservationPage() {
         setScreening(sc);
         setSeats(sm);
       })
-      .catch(() => setError("Nie udało się załadować seansu."))
+      .catch(() => setError("Failed to load the screening."))
       .finally(() => setLoading(false));
   };
 
@@ -56,27 +57,27 @@ export default function ReservationPage() {
       .join(", ");
     if (user) {
       setSuccess(
-        `Rezerwacja potwierdzona (${labels})! Potwierdzenie wysłano na e-mail.`
+        `Reservation confirmed (${labels})! A confirmation has been sent to your email.`
       );
       setTimeout(() => navigate("/my-reservations"), 1800);
     } else {
       setSuccess(
-        `Bilety kupione! Potwierdzenie wysłano na adres ${email}. Miejsca: ${labels}.`
+        `Tickets purchased! A confirmation has been sent to ${email}. Seats: ${labels}.`
       );
       setSelected([]);
       load();
     }
   };
 
-  if (loading) return <div className="container">Ładowanie...</div>;
+  if (loading) return <div className="container">Loading...</div>;
   if (!screening) return <div className="container">{error}</div>;
 
   return (
     <div className="container">
-      <h2>Wybór miejsca</h2>
+      <h2>Seat selection</h2>
       <div className="reserve-layout">
         <div>
-          <div className="screen">EKRAN</div>
+          <div className="screen">SCREEN</div>
           <div className="seatmap">
             {rows.map(([row, rowSeats]) => (
               <div key={row} className="seat-row">
@@ -88,7 +89,7 @@ export default function ReservationPage() {
                       isSelected(s) ? "selected" : ""
                     }`}
                     disabled={s.taken}
-                    title={s.taken ? "Zajęte" : `Miejsce ${s.row}${s.number}`}
+                    title={s.taken ? "Taken" : `Seat ${s.row}${s.number}`}
                     onClick={() => !s.taken && toggleSeat(s)}
                   >
                     {s.number}
@@ -100,17 +101,17 @@ export default function ReservationPage() {
 
           <div className="legend">
             <span>
-              <i className="seat legend-box" /> wolne
+              <i className="seat legend-box" /> available
             </span>
             <span>
-              <i className="seat selected legend-box" /> wybrane
+              <i className="seat selected legend-box" /> selected
             </span>
             <span>
-              <i className="seat taken legend-box" /> zajęte
+              <i className="seat taken legend-box" /> taken
             </span>
           </div>
 
-          {seats.length === 0 && <p className="muted">Ta sala nie ma miejsc.</p>}
+          {seats.length === 0 && <p className="muted">This hall has no seats.</p>}
           {success && <div className="alert success">{success}</div>}
         </div>
 

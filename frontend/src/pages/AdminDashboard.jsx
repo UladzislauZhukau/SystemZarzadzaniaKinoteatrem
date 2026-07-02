@@ -11,6 +11,7 @@ import {
   getScreenings,
   lookupMovie,
 } from "../api/endpoints";
+import "../styles/AdminDashboard.css";
 
 const EMPTY_MOVIE = {
   title: "",
@@ -35,7 +36,7 @@ function MoviesTab() {
 
   const handleLookup = async () => {
     if (!form.title.trim()) {
-      setLookupError("Wpisz tytuł filmu, aby wyszukać.");
+      setLookupError("Enter a film title to search.");
       return;
     }
     setLookupError("");
@@ -53,7 +54,7 @@ function MoviesTab() {
       });
     } catch (err) {
       setLookupError(
-        err.response?.data?.detail || "Nie udało się pobrać danych z IMDb."
+        err.response?.data?.detail || "Failed to fetch data from IMDb."
       );
     } finally {
       setSearching(false);
@@ -75,10 +76,10 @@ function MoviesTab() {
   return (
     <div>
       <form className="form" onSubmit={submit}>
-        <h3>Dodaj film</h3>
+        <h3>Add film</h3>
         <div style={{ display: "flex", gap: 8 }}>
           <input
-            placeholder="Tytul"
+            placeholder="Title"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             required
@@ -90,7 +91,7 @@ function MoviesTab() {
             disabled={searching}
             style={{ whiteSpace: "nowrap" }}
           >
-            {searching ? "Szukam..." : "Szukaj w IMDb"}
+            {searching ? "Searching..." : "Search on IMDb"}
           </button>
         </div>
         {lookupError && <div className="alert error">{lookupError}</div>}
@@ -102,39 +103,39 @@ function MoviesTab() {
           />
         )}
         <input
-          placeholder="Gatunek"
+          placeholder="Genre"
           value={form.genre}
           onChange={(e) => setForm({ ...form, genre: e.target.value })}
         />
         <textarea
-          placeholder="Opis"
+          placeholder="Description"
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
         <input
           type="number"
-          placeholder="Czas (min)"
+          placeholder="Duration (min)"
           value={form.duration_min}
           onChange={(e) => setForm({ ...form, duration_min: e.target.value })}
         />
         <input
           type="number"
           step="0.1"
-          placeholder="Ocena"
+          placeholder="Rating"
           value={form.rating}
           onChange={(e) => setForm({ ...form, rating: e.target.value })}
         />
         <input
-          placeholder="URL plakatu"
+          placeholder="Poster URL"
           value={form.poster_url}
           onChange={(e) => setForm({ ...form, poster_url: e.target.value })}
         />
         <input
-          placeholder="URL zwiastuna (embed)"
+          placeholder="Trailer URL (embed)"
           value={form.trailer_url}
           onChange={(e) => setForm({ ...form, trailer_url: e.target.value })}
         />
-        <button className="btn">Dodaj</button>
+        <button className="btn">Add</button>
       </form>
 
       <table>
@@ -142,9 +143,9 @@ function MoviesTab() {
           <tr>
             <th></th>
             <th>ID</th>
-            <th>Tytul</th>
-            <th>Gatunek</th>
-            <th>Czas</th>
+            <th>Title</th>
+            <th>Genre</th>
+            <th>Duration</th>
             <th></th>
           </tr>
         </thead>
@@ -169,7 +170,7 @@ function MoviesTab() {
                   className="btn small danger"
                   onClick={() => deleteMovie(m.id).then(load)}
                 >
-                  Usun
+                  Delete
                 </button>
               </td>
             </tr>
@@ -204,34 +205,34 @@ function HallsTab() {
   return (
     <div>
       <form className="form" onSubmit={submit}>
-        <h3>Dodaj sale</h3>
+        <h3>Add hall</h3>
         <input
-          placeholder="Nazwa sali"
+          placeholder="Hall name"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           required
         />
-        <label>Liczba rzedow</label>
+        <label>Number of rows</label>
         <input
           type="number"
           value={form.rows}
           onChange={(e) => setForm({ ...form, rows: e.target.value })}
         />
-        <label>Miejsc w rzedzie</label>
+        <label>Seats per row</label>
         <input
           type="number"
           value={form.seats_per_row}
           onChange={(e) => setForm({ ...form, seats_per_row: e.target.value })}
         />
-        <button className="btn">Dodaj (z miejscami)</button>
+        <button className="btn">Add (with seats)</button>
       </form>
 
       <table>
         <thead>
           <tr>
             <th>ID</th>
-            <th>Nazwa</th>
-            <th>Pojemnosc</th>
+            <th>Name</th>
+            <th>Capacity</th>
             <th></th>
           </tr>
         </thead>
@@ -246,7 +247,7 @@ function HallsTab() {
                   className="btn small danger"
                   onClick={() => deleteHall(h.id).then(load)}
                 >
-                  Usun
+                  Delete
                 </button>
               </td>
             </tr>
@@ -267,6 +268,7 @@ function ScreeningsTab() {
     start_time: "",
     ticket_price: 30,
   });
+  const [error, setError] = useState("");
 
   const load = () => getScreenings().then(setScreenings);
   useEffect(() => {
@@ -277,26 +279,32 @@ function ScreeningsTab() {
 
   const submit = async (e) => {
     e.preventDefault();
-    await createScreening({
-      movie_id: Number(form.movie_id),
-      hall_id: Number(form.hall_id),
-      start_time: new Date(form.start_time).toISOString(),
-      ticket_price: Number(form.ticket_price),
-    });
-    setForm({ movie_id: "", hall_id: "", start_time: "", ticket_price: 30 });
-    load();
+    setError("");
+    try {
+      await createScreening({
+        movie_id: Number(form.movie_id),
+        hall_id: Number(form.hall_id),
+        start_time: new Date(form.start_time).toISOString(),
+        ticket_price: Number(form.ticket_price),
+      });
+      setForm({ movie_id: "", hall_id: "", start_time: "", ticket_price: 30 });
+      load();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to add the screening.");
+    }
   };
 
   return (
     <div>
       <form className="form" onSubmit={submit}>
-        <h3>Dodaj seans</h3>
+        <h3>Add screening</h3>
+        {error && <div className="alert error">{error}</div>}
         <select
           value={form.movie_id}
           onChange={(e) => setForm({ ...form, movie_id: e.target.value })}
           required
         >
-          <option value="">-- Wybierz film --</option>
+          <option value="">-- Select film --</option>
           {movies.map((m) => (
             <option key={m.id} value={m.id}>
               {m.title}
@@ -308,28 +316,28 @@ function ScreeningsTab() {
           onChange={(e) => setForm({ ...form, hall_id: e.target.value })}
           required
         >
-          <option value="">-- Wybierz sale --</option>
+          <option value="">-- Select hall --</option>
           {halls.map((h) => (
             <option key={h.id} value={h.id}>
               {h.name}
             </option>
           ))}
         </select>
-        <label>Data i godzina</label>
+        <label>Date and time</label>
         <input
           type="datetime-local"
           value={form.start_time}
           onChange={(e) => setForm({ ...form, start_time: e.target.value })}
           required
         />
-        <label>Cena biletu (PLN)</label>
+        <label>Ticket price (PLN)</label>
         <input
           type="number"
           step="0.01"
           value={form.ticket_price}
           onChange={(e) => setForm({ ...form, ticket_price: e.target.value })}
         />
-        <button className="btn">Dodaj</button>
+        <button className="btn">Add</button>
       </form>
 
       <table>
@@ -337,9 +345,9 @@ function ScreeningsTab() {
           <tr>
             <th>ID</th>
             <th>Film</th>
-            <th>Sala</th>
-            <th>Data</th>
-            <th>Cena</th>
+            <th>Hall</th>
+            <th>Date</th>
+            <th>Price</th>
             <th></th>
           </tr>
         </thead>
@@ -349,14 +357,14 @@ function ScreeningsTab() {
               <td>{s.id}</td>
               <td>{s.movie.title}</td>
               <td>{s.hall.name}</td>
-              <td>{new Date(s.start_time).toLocaleString("pl-PL")}</td>
+              <td>{new Date(s.start_time).toLocaleString("en-US")}</td>
               <td>{s.ticket_price} PLN</td>
               <td>
                 <button
                   className="btn small danger"
                   onClick={() => deleteScreening(s.id).then(load)}
                 >
-                  Usun
+                  Delete
                 </button>
               </td>
             </tr>
@@ -372,25 +380,25 @@ export default function AdminDashboard() {
 
   return (
     <div className="container">
-      <h2>Panel administratora</h2>
+      <h2>Admin panel</h2>
       <div className="tabs">
         <button
           className={tab === "movies" ? "active" : ""}
           onClick={() => setTab("movies")}
         >
-          Filmy
+          Films
         </button>
         <button
           className={tab === "halls" ? "active" : ""}
           onClick={() => setTab("halls")}
         >
-          Sale
+          Halls
         </button>
         <button
           className={tab === "screenings" ? "active" : ""}
           onClick={() => setTab("screenings")}
         >
-          Seanse
+          Screenings
         </button>
       </div>
       {tab === "movies" && <MoviesTab />}

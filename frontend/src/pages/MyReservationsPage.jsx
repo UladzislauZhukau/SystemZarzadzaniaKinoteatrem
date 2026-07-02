@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { cancelReservation, getMyReservations } from "../api/endpoints";
+import "../styles/MyReservationsPage.css";
 
 export default function MyReservationsPage() {
   const [reservations, setReservations] = useState([]);
@@ -19,21 +20,21 @@ export default function MyReservationsPage() {
     load();
   };
 
-  if (loading) return <div className="container">Ladowanie...</div>;
+  if (loading) return <div className="container">Loading...</div>;
 
   return (
     <div className="container">
-      <h2>Moje rezerwacje</h2>
-      {reservations.length === 0 && <p className="muted">Brak rezerwacji.</p>}
+      <h2>My reservations</h2>
+      {reservations.length === 0 && <p className="muted">No reservations.</p>}
       {reservations.length > 0 && (
         <table>
           <thead>
             <tr>
               <th>Film</th>
-              <th>Data seansu</th>
-              <th>Sala</th>
-              <th>Miejsce</th>
-              <th>Cena</th>
+              <th>Screening date</th>
+              <th>Hall</th>
+              <th>Seat</th>
+              <th>Price</th>
               <th>Status</th>
               <th></th>
             </tr>
@@ -42,7 +43,7 @@ export default function MyReservationsPage() {
             {reservations.map((r) => (
               <tr key={r.id}>
                 <td>{r.screening.movie.title}</td>
-                <td>{new Date(r.screening.start_time).toLocaleString("pl-PL")}</td>
+                <td>{new Date(r.screening.start_time).toLocaleString("en-US")}</td>
                 <td>{r.screening.hall.name}</td>
                 <td>
                   {r.seat.row}
@@ -63,7 +64,7 @@ export default function MyReservationsPage() {
                       className="btn small danger"
                       onClick={() => handleCancel(r.id)}
                     >
-                      Anuluj
+                      Cancel
                     </button>
                   )}
                 </td>

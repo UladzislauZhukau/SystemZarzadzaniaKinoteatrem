@@ -20,6 +20,10 @@ export const getMovieReviews = (id) =>
   client.get(`/movies/${id}/reviews`).then((r) => r.data);
 export const createMovieReview = (id, data) =>
   client.post(`/movies/${id}/reviews`, data).then((r) => r.data);
+export const updateMovieReview = (movieId, reviewId, data) =>
+  client.put(`/movies/${movieId}/reviews/${reviewId}`, data).then((r) => r.data);
+export const deleteMovieReview = (movieId, reviewId) =>
+  client.delete(`/movies/${movieId}/reviews/${reviewId}`);
 
 // Halls
 export const getHalls = () => client.get("/halls").then((r) => r.data);

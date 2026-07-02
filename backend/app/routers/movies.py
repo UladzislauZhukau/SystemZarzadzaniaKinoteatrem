@@ -7,7 +7,7 @@ from app.db.session import get_db
 from app.deps import get_current_user, require_admin
 from app.models.customer import Customer
 from app.schemas.movie import MovieBase, MovieCreate, MovieRead, MovieUpdate
-from app.schemas.review import MovieReviews, ReviewCreate, ReviewRead
+from app.schemas.review import MovieReviews, ReviewCreate, ReviewRead, ReviewUpdate
 from app.services import omdb, tmdb
 
 router = APIRouter(prefix="/movies", tags=["movies"])
@@ -88,4 +88,52 @@ def create_review(
         comment=review.comment,
         created_at=review.created_at,
         author_name=current_user.name,
+        customer_id=review.customer_id,
     )
+
+
+def _get_owned_review(
+    movie_id: int, review_id: int, current_user: Customer, db: Session
+):
+    """Load a review, enforcing that it belongs to `movie_id` and that the
+    current user may modify it (its author or an admin)."""
+    review = review_crud.get_review(db, review_id)
+    if not review or review.movie_id != movie_id:
+        raise HTTPException(status_code=404, detail="Review not found")
+    if review.customer_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only modify your own reviews.",
+        )
+    return review
+
+
+@router.put("/{movie_id}/reviews/{review_id}", response_model=ReviewRead)
+def update_review(
+    movie_id: int,
+    review_id: int,
+    data: ReviewUpdate,
+    current_user: Customer = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    review = _get_owned_review(movie_id, review_id, current_user, db)
+    review = review_crud.update_review(db, review, data)
+    return ReviewRead(
+        id=review.id,
+        rating=review.rating,
+        comment=review.comment,
+        created_at=review.created_at,
+        author_name=review.customer.name,
+        customer_id=review.customer_id,
+    )
+
+
+@router.delete("/{movie_id}/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_review(
+    movie_id: int,
+    review_id: int,
+    current_user: Customer = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    review = _get_owned_review(movie_id, review_id, current_user, db)
+    review_crud.delete_review(db, review)

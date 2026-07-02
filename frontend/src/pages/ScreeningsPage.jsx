@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { getScreenings } from "../api/endpoints";
+import "../styles/ScreeningsPage.css";
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleString("pl-PL", {
+  return new Date(iso).toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   });
@@ -22,25 +23,36 @@ export default function ScreeningsPage() {
       .finally(() => setLoading(false));
   }, [movieId]);
 
-  if (loading) return <div className="container">Ładowanie...</div>;
+  if (loading) return <div className="container">Loading...</div>;
 
   const title =
     movieId && screenings.length > 0
-      ? `Seanse: ${screenings[0].movie.title}`
-      : "Repertuar / Seanse";
+      ? `Screenings: ${screenings[0].movie.title}`
+      : "Schedule / Screenings";
 
   return (
     <div className="container">
       <h2>{title}</h2>
       {movieId && (
         <Link to="/screenings" className="muted">
-          &larr; Wszystkie seanse
+          &larr; All screenings
         </Link>
       )}
-      {screenings.length === 0 && <p className="muted">Brak seansów.</p>}
+      {screenings.length === 0 && <p className="muted">No screenings.</p>}
       <div className="grid">
         {screenings.map((s) => (
           <div key={s.id} className="card">
+            <Link to={`/movies/${s.movie.id}`} className="movie-poster-link">
+              {s.movie.poster_url ? (
+                <img
+                  src={s.movie.poster_url}
+                  alt={s.movie.title}
+                  className="movie-poster"
+                />
+              ) : (
+                <div className="movie-poster movie-poster-empty">No poster</div>
+              )}
+            </Link>
             <h3>{s.movie.title}</h3>
             <p className="muted" style={{ margin: "4px 0" }}>
               {formatDate(s.start_time)}
@@ -51,7 +63,7 @@ export default function ScreeningsPage() {
             </div>
             <div style={{ marginTop: 12 }}>
               <Link to={`/reserve/${s.id}`} className="btn small">
-                Wybierz miejsce
+                Choose a seat
               </Link>
             </div>
           </div>

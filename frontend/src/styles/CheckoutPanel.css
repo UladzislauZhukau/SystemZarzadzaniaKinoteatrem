@@ -1,0 +1,5 @@
+/* Checkout side panel (reservation summary + payment form) */
+.checkout {
+  position: sticky;
+  top: 90px;
+}

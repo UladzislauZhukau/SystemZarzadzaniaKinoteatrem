@@ -5,6 +5,7 @@ import {
   createGuestBulkReservation,
 } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import "../styles/CheckoutPanel.css";
 
 const onlyDigits = (v) => v.replace(/\D/g, "");
 
@@ -37,13 +38,13 @@ export default function CheckoutPanel({ screening, selected, onReserved }) {
     .join(", ");
 
   const validate = () => {
-    if (count === 0) return "Najpierw wybierz przynajmniej jedno miejsce.";
+    if (count === 0) return "Please select at least one seat first.";
     if (!user && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
-      return "Podaj poprawny adres e-mail.";
-    if (onlyDigits(card).length !== 16) return "Numer karty musi mieć 16 cyfr.";
+      return "Please enter a valid email address.";
+    if (onlyDigits(card).length !== 16) return "Card number must have 16 digits.";
     if (!/^\d{2}\/\d{2}$/.test(expiry))
-      return "Data ważności w formacie MM/YY.";
-    if (!/^\d{3}$/.test(cvc)) return "Kod CVC musi mieć 3 cyfry.";
+      return "Expiry date must be in MM/YY format.";
+    if (!/^\d{3}$/.test(cvc)) return "CVC code must have 3 digits.";
     return "";
   };
 
@@ -66,7 +67,7 @@ export default function CheckoutPanel({ screening, selected, onReserved }) {
         : await createGuestBulkReservation({ ...payload, email });
       onReserved(reservations, user ? user.email : email);
     } catch (err) {
-      setError(err.response?.data?.detail || "Błąd płatności / rezerwacji.");
+      setError(err.response?.data?.detail || "Payment / reservation error.");
     } finally {
       setSubmitting(false);
     }
@@ -74,36 +75,36 @@ export default function CheckoutPanel({ screening, selected, onReserved }) {
 
   return (
     <aside className="card checkout">
-      <h3>Podsumowanie</h3>
+      <h3>Summary</h3>
       <p className="muted" style={{ margin: "4px 0 12px" }}>
         {screening.movie.title}
         <br />
-        {new Date(screening.start_time).toLocaleString("pl-PL")} ·{" "}
+        {new Date(screening.start_time).toLocaleString("en-US")} ·{" "}
         {screening.hall.name}
       </p>
 
       <div className="row-between">
-        <span className="muted">Miejsca ({count})</span>
+        <span className="muted">Seats ({count})</span>
         <strong>{count > 0 ? seatLabels : "-"}</strong>
       </div>
       <div className="row-between" style={{ marginBottom: 12 }}>
         <span className="muted">
-          Razem{count > 0 ? ` (${count} x ${screening.ticket_price} PLN)` : ""}
+          Total{count > 0 ? ` (${count} x ${screening.ticket_price} PLN)` : ""}
         </span>
         <strong>{total} PLN</strong>
       </div>
 
       {!user && (
         <p className="muted" style={{ fontSize: "0.8rem" }}>
-          Masz konto? <Link to="/login">Zaloguj się</Link> lub{" "}
-          <Link to="/register">zarejestruj</Link>, aby zbierać rabaty
-          lojalnościowe. Możesz też kupić bilet jako gość poniżej.
+          Have an account? <Link to="/login">Sign in</Link> or{" "}
+          <Link to="/register">register</Link> to earn loyalty
+          discounts. You can also buy a ticket as a guest below.
         </p>
       )}
       {user && (
         <p className="muted" style={{ fontSize: "0.8rem" }}>
-          Kupujesz jako <b>{user.name}</b>. Rabat lojalnościowy (jeśli
-          przysługuje) zostanie naliczony automatycznie.
+          Buying as <b>{user.name}</b>. Your loyalty discount (if
+          eligible) will be applied automatically.
         </p>
       )}
 
@@ -112,7 +113,7 @@ export default function CheckoutPanel({ screening, selected, onReserved }) {
       <form className="form" onSubmit={submit} style={{ gap: 10 }}>
         {!user && (
           <div>
-            <label>E-mail (na ten adres wyślemy bilet)</label>
+            <label>Email (we'll send the ticket to this address)</label>
             <input
               type="email"
               value={email}
@@ -123,7 +124,7 @@ export default function CheckoutPanel({ screening, selected, onReserved }) {
         )}
 
         <div>
-          <label>Numer karty</label>
+          <label>Card number</label>
           <input
             inputMode="numeric"
             value={card}
@@ -133,7 +134,7 @@ export default function CheckoutPanel({ screening, selected, onReserved }) {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1 }}>
-            <label>Ważność</label>
+            <label>Expiry</label>
             <input
               inputMode="numeric"
               value={expiry}
@@ -154,13 +155,13 @@ export default function CheckoutPanel({ screening, selected, onReserved }) {
 
         <button className="btn" type="submit" disabled={count === 0 || submitting}>
           {submitting
-            ? "Przetwarzanie..."
+            ? "Processing..."
             : count > 0
-            ? `Kup bilety (${count}) - ${total} PLN`
-            : "Wybierz miejsca"}
+            ? `Buy tickets (${count}) - ${total} PLN`
+            : "Select seats"}
         </button>
         <p className="muted" style={{ fontSize: "0.7rem", margin: 0 }}>
-          Płatność testowa - karta nie zostanie obciążona.
+          Test payment - your card will not be charged.
         </p>
       </form>
     </aside>
