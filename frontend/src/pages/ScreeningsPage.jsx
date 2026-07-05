@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { getScreenings } from "../api/endpoints";
+import AutocompleteInput from "../components/AutocompleteInput";
 import "../styles/ScreeningsPage.css";
 
 function formatDate(iso) {
@@ -99,6 +100,15 @@ export default function ScreeningsPage() {
     [screenings]
   );
 
+  // Distinct film titles, for the search input's autocomplete suggestions.
+  const titles = useMemo(
+    () =>
+      [...new Set(screenings.map((s) => s.movie.title))].sort((a, b) =>
+        a.localeCompare(b)
+      ),
+    [screenings]
+  );
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return screenings
@@ -153,12 +163,13 @@ export default function ScreeningsPage() {
       <div className="filter-bar">
         <div className="filter-field grow">
           <label htmlFor="scr-search">Search</label>
-          <input
+          <AutocompleteInput
             id="scr-search"
-            type="search"
             placeholder="Search by film..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={setQuery}
+            options={titles}
+            historyKey="screenings"
           />
         </div>
         <div className="filter-field">

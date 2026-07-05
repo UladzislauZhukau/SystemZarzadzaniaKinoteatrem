@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import MusicPlayer from "./MusicPlayer";
 import "../styles/Navbar.css";
 
 export default function Navbar() {
@@ -36,6 +37,7 @@ export default function Navbar() {
             </Link>
           </>
         )}
+        <MusicPlayer />
       </nav>
     </header>
   );

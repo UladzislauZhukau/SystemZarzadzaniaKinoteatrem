@@ -10,8 +10,10 @@ export const getMe = () => client.get("/auth/me").then((r) => r.data);
 // Movies
 export const getMovies = () => client.get("/movies").then((r) => r.data);
 export const getMovie = (id) => client.get(`/movies/${id}`).then((r) => r.data);
-export const lookupMovie = (title) =>
-  client.get("/movies/lookup", { params: { title } }).then((r) => r.data);
+export const lookupMovie = (params) =>
+  client.get("/movies/lookup", { params }).then((r) => r.data);
+export const searchImdb = (query) =>
+  client.get("/movies/imdb-search", { params: { query } }).then((r) => r.data);
 export const createMovie = (data) => client.post("/movies", data).then((r) => r.data);
 export const updateMovie = (id, data) =>
   client.put(`/movies/${id}`, data).then((r) => r.data);

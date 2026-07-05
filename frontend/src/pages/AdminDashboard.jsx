@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createHall,
   createMovie,
@@ -10,11 +10,13 @@ import {
   getMovies,
   getScreenings,
   lookupMovie,
+  searchImdb,
   updateHall,
   updateMovie,
   updateScreening,
 } from "../api/endpoints";
 import "../styles/AdminDashboard.css";
+import "../styles/Autocomplete.css";
 
 const EMPTY_MOVIE = {
   title: "",
@@ -32,21 +34,65 @@ function MoviesTab() {
   const [editingId, setEditingId] = useState(null);
   const [lookupError, setLookupError] = useState("");
   const [searching, setSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  // Bumped on every pick/lookup so the debounced search effect skips the
+  // programmatic title change that follows an autofill.
+  const suppressSearch = useRef(false);
+  const titleWrapRef = useRef(null);
 
   const load = () => getMovies().then(setMovies);
   useEffect(() => {
     load();
   }, []);
 
+  // Debounced IMDb search as the admin types a title.
+  useEffect(() => {
+    const q = form.title.trim();
+    if (suppressSearch.current) {
+      suppressSearch.current = false;
+      return;
+    }
+    if (q.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      searchImdb(q)
+        .then((results) => {
+          setSuggestions(results);
+          setShowSuggestions(true);
+        })
+        .catch(() => setSuggestions([]));
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [form.title]);
+
+  // Close the suggestion list when clicking outside the title field.
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (titleWrapRef.current && !titleWrapRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
   const resetForm = () => {
     setForm(EMPTY_MOVIE);
     setEditingId(null);
     setLookupError("");
+    setSuggestions([]);
+    setShowSuggestions(false);
   };
 
   const startEdit = (m) => {
     setEditingId(m.id);
     setLookupError("");
+    suppressSearch.current = true;
+    setSuggestions([]);
+    setShowSuggestions(false);
     setForm({
       title: m.title || "",
       genre: m.genre || "",
@@ -58,15 +104,14 @@ function MoviesTab() {
     });
   };
 
-  const handleLookup = async () => {
-    if (!form.title.trim()) {
-      setLookupError("Enter a film title to search.");
-      return;
-    }
+  // Pull full metadata from OMDb by exact title or a picked IMDb id.
+  const autofill = async (params) => {
     setLookupError("");
     setSearching(true);
+    setShowSuggestions(false);
     try {
-      const data = await lookupMovie(form.title.trim());
+      const data = await lookupMovie(params);
+      suppressSearch.current = true;
       setForm({
         title: data.title || "",
         genre: data.genre || "",
@@ -83,6 +128,19 @@ function MoviesTab() {
     } finally {
       setSearching(false);
     }
+  };
+
+  const handleLookup = () => {
+    if (!form.title.trim()) {
+      setLookupError("Enter a film title to search.");
+      return;
+    }
+    autofill({ title: form.title.trim() });
+  };
+
+  const pickSuggestion = (s) => {
+    setSuggestions([]);
+    autofill({ imdb_id: s.imdb_id });
   };
 
   const submit = async (e) => {
@@ -106,12 +164,43 @@ function MoviesTab() {
       <form className="form" onSubmit={submit}>
         <h3>{editingId ? `Edit film #${editingId}` : "Add film"}</h3>
         <div style={{ display: "flex", gap: 8 }}>
-          <input
-            placeholder="Title"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            required
-          />
+          <div className="autocomplete" ref={titleWrapRef} style={{ flex: 1 }}>
+            <input
+              placeholder="Title"
+              value={form.title}
+              autoComplete="off"
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              onFocus={() =>
+                suggestions.length > 0 && setShowSuggestions(true)
+              }
+              required
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="autocomplete-list">
+                {suggestions.map((s) => (
+                  <li
+                    key={s.imdb_id}
+                    className="imdb-option"
+                    onMouseDown={() => pickSuggestion(s)}
+                  >
+                    {s.poster_url ? (
+                      <img
+                        src={s.poster_url}
+                        alt=""
+                        className="imdb-poster"
+                      />
+                    ) : (
+                      <div className="imdb-poster-empty" />
+                    )}
+                    <div className="imdb-meta">
+                      <span className="imdb-title">{s.title}</span>
+                      {s.year && <span className="imdb-year">{s.year}</span>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <button
             type="button"
             className="btn secondary"

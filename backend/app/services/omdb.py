@@ -29,21 +29,27 @@ def _clean(value: str | None) -> str | None:
     return value
 
 
-def lookup_movie(title: str) -> dict:
-    """Look up a film by title on the OMDb API (IMDb data) and return a
-    normalized dict ready to populate a MovieBase. Raises OMDbError on
-    missing key, network problems, or when the film is not found."""
+def lookup_movie(title: str | None = None, imdb_id: str | None = None) -> dict:
+    """Look up a film on the OMDb API (IMDb data) by exact title or IMDb id and
+    return a normalized dict ready to populate a MovieBase. Prefer `imdb_id`
+    when known (e.g. picked from a search suggestion) for an exact match.
+    Raises OMDbError on missing key, network problems, or when not found."""
     if not settings.OMDB_API_KEY:
         raise OMDbError(
             "OMDb API key is not configured. Set OMDB_API_KEY in the environment."
         )
+    if not imdb_id and not title:
+        raise OMDbError("Provide a film title or IMDb id to look up.")
+
+    params = {"apikey": settings.OMDB_API_KEY}
+    if imdb_id:
+        params["i"] = imdb_id
+    else:
+        params["t"] = title
+        params["type"] = "movie"
 
     try:
-        response = httpx.get(
-            settings.OMDB_URL,
-            params={"apikey": settings.OMDB_API_KEY, "t": title, "type": "movie"},
-            timeout=10.0,
-        )
+        response = httpx.get(settings.OMDB_URL, params=params, timeout=10.0)
         response.raise_for_status()
         data = response.json()
     except httpx.HTTPError as exc:
@@ -60,3 +66,36 @@ def lookup_movie(title: str) -> dict:
         "rating": _parse_rating(data.get("imdbRating")),
         "poster_url": _clean(data.get("Poster")),
     }
+
+
+def search_movies(query: str, limit: int = 8) -> list[dict]:
+    """Search OMDb by title and return a list of candidate films
+    (title, year, imdb_id, poster) for the admin autocomplete. Best-effort:
+    returns [] when the key is missing, on network errors, or no matches."""
+    if not settings.OMDB_API_KEY or not query.strip():
+        return []
+
+    try:
+        response = httpx.get(
+            settings.OMDB_URL,
+            params={"apikey": settings.OMDB_API_KEY, "s": query, "type": "movie"},
+            timeout=10.0,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except httpx.HTTPError:
+        return []
+
+    if data.get("Response") == "False":
+        return []
+
+    return [
+        {
+            "title": item.get("Title"),
+            "year": _clean(item.get("Year")),
+            "imdb_id": item.get("imdbID"),
+            "poster_url": _clean(item.get("Poster")),
+        }
+        for item in (data.get("Search") or [])[:limit]
+        if item.get("imdbID")
+    ]

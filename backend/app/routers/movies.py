@@ -6,7 +6,13 @@ from app.crud import review as review_crud
 from app.db.session import get_db
 from app.deps import get_current_user, require_admin
 from app.models.customer import Customer
-from app.schemas.movie import MovieBase, MovieCreate, MovieRead, MovieUpdate
+from app.schemas.movie import (
+    MovieBase,
+    MovieCreate,
+    MovieRead,
+    MovieSuggestion,
+    MovieUpdate,
+)
 from app.schemas.review import MovieReviews, ReviewCreate, ReviewRead, ReviewUpdate
 from app.services import omdb, tmdb
 
@@ -18,12 +24,24 @@ def list_movies(db: Session = Depends(get_db)):
     return movie_crud.get_movies(db)
 
 
+@router.get(
+    "/imdb-search",
+    response_model=list[MovieSuggestion],
+    dependencies=[Depends(require_admin)],
+)
+def imdb_search(query: str):
+    """Search OMDb (IMDb) by partial title and return candidate films for the
+    admin autofill autocomplete. Best-effort: returns [] on any failure."""
+    return omdb.search_movies(query)
+
+
 @router.get("/lookup", response_model=MovieBase, dependencies=[Depends(require_admin)])
-def lookup_movie(title: str):
+def lookup_movie(title: str | None = None, imdb_id: str | None = None):
     """Fetch film metadata (poster, plot, genre, runtime, rating) from OMDb
-    (IMDb data). Returns unsaved data for the admin form to auto-fill."""
+    (IMDb data). Look up by exact `title` or, preferably, an `imdb_id` picked
+    from a search suggestion. Returns unsaved data for the admin form."""
     try:
-        data = omdb.lookup_movie(title)
+        data = omdb.lookup_movie(title=title, imdb_id=imdb_id)
     except omdb.OMDbError as exc:
         message = str(exc)
         code = 404 if "not found" in message.lower() else 502

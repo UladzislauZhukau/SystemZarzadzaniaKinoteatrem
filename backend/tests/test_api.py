@@ -175,7 +175,7 @@ def test_bulk_reservation_is_atomic(client, seeded):
 def test_movie_lookup_autofill(client, seeded, monkeypatch):
     from app.services import omdb
 
-    def fake_lookup(title):
+    def fake_lookup(title=None, imdb_id=None):
         return {
             "title": "Inception",
             "genre": "Sci-Fi, Action",
@@ -199,7 +199,7 @@ def test_movie_lookup_autofill(client, seeded, monkeypatch):
 def test_movie_lookup_includes_trailer(client, seeded, monkeypatch):
     from app.services import omdb, tmdb
 
-    def fake_lookup(title):
+    def fake_lookup(title=None, imdb_id=None):
         return {
             "title": "Inception",
             "genre": "Sci-Fi",
@@ -226,10 +226,72 @@ def test_movie_lookup_requires_admin(client, seeded):
     assert resp.status_code == 403
 
 
+def test_imdb_search_suggestions(client, seeded, monkeypatch):
+    from app.services import omdb
+
+    def fake_search(query, limit=8):
+        return [
+            {
+                "title": "Inception",
+                "year": "2010",
+                "imdb_id": "tt1375666",
+                "poster_url": "https://example.com/inception.jpg",
+            }
+        ]
+
+    monkeypatch.setattr(omdb, "search_movies", fake_search)
+
+    headers = auth_headers(client, "admin@example.com", "admin123")
+    resp = client.get(
+        "/movies/imdb-search", params={"query": "incep"}, headers=headers
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data[0]["imdb_id"] == "tt1375666"
+    assert data[0]["year"] == "2010"
+
+
+def test_imdb_search_requires_admin(client, seeded):
+    headers = auth_headers(client, "jan@example.com", "test123")
+    resp = client.get(
+        "/movies/imdb-search", params={"query": "incep"}, headers=headers
+    )
+    assert resp.status_code == 403
+
+
+def test_movie_lookup_by_imdb_id(client, seeded, monkeypatch):
+    from app.services import omdb, tmdb
+
+    captured = {}
+
+    def fake_lookup(title=None, imdb_id=None):
+        captured["title"] = title
+        captured["imdb_id"] = imdb_id
+        return {
+            "title": "Inception",
+            "genre": "Sci-Fi",
+            "description": "...",
+            "duration_min": 148,
+            "rating": 8.8,
+            "poster_url": "https://example.com/inception.jpg",
+        }
+
+    monkeypatch.setattr(omdb, "lookup_movie", fake_lookup)
+    monkeypatch.setattr(tmdb, "find_trailer", lambda title: None)
+
+    headers = auth_headers(client, "admin@example.com", "admin123")
+    resp = client.get(
+        "/movies/lookup", params={"imdb_id": "tt1375666"}, headers=headers
+    )
+    assert resp.status_code == 200, resp.text
+    assert captured["imdb_id"] == "tt1375666"
+    assert captured["title"] is None
+
+
 def test_movie_lookup_not_found(client, seeded, monkeypatch):
     from app.services import omdb
 
-    def fake_lookup(title):
+    def fake_lookup(title=None, imdb_id=None):
         raise omdb.OMDbError("Movie not found.")
 
     monkeypatch.setattr(omdb, "lookup_movie", fake_lookup)

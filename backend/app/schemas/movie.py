@@ -28,3 +28,12 @@ class MovieUpdate(BaseModel):
 class MovieRead(MovieBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+
+
+class MovieSuggestion(BaseModel):
+    """A single IMDb search hit for the admin autofill autocomplete."""
+
+    title: str
+    year: str | None = None
+    imdb_id: str
+    poster_url: str | None = None

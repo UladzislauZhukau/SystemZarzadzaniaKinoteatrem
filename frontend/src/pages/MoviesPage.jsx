@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMovies } from "../api/endpoints";
+import AutocompleteInput from "../components/AutocompleteInput";
 import "../styles/MoviesPage.css";
 
 const SORTS = {
@@ -46,6 +47,12 @@ export default function MoviesPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Film titles, for the search input's autocomplete suggestions.
+  const titles = useMemo(
+    () => movies.map((m) => m.title).sort((a, b) => a.localeCompare(b)),
+    [movies]
+  );
+
   // Distinct individual genres across all films, for the dropdown.
   const genres = useMemo(
     () =>
@@ -80,12 +87,13 @@ export default function MoviesPage() {
       <div className="filter-bar">
         <div className="filter-field grow">
           <label htmlFor="movie-search">Search</label>
-          <input
+          <AutocompleteInput
             id="movie-search"
-            type="search"
             placeholder="Search by title..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={setQuery}
+            options={titles}
+            historyKey="movies"
           />
         </div>
         <div className="filter-field">

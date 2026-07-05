@@ -1,0 +1,105 @@
+/* Autocomplete suggestion dropdown (filter search inputs & admin IMDb search) */
+.autocomplete {
+  position: relative;
+  width: 100%;
+}
+.autocomplete-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  max-height: 280px;
+  overflow-y: auto;
+}
+.autocomplete-list li {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.autocomplete-list li.active,
+.autocomplete-list li:hover {
+  background: var(--surface-2);
+}
+
+/* Recent-search history */
+.autocomplete-list li.autocomplete-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px 4px;
+  cursor: default;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.autocomplete-list li.autocomplete-header:hover {
+  background: transparent;
+}
+.autocomplete-header button {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0;
+  width: auto;
+}
+.autocomplete-list li.history-item::before {
+  content: "\1F551"; /* clock face */
+  margin-right: 8px;
+  opacity: 0.55;
+  font-size: 0.85em;
+}
+
+/* Rich variant used by the admin IMDb search (poster + title + year) */
+.autocomplete-list li.imdb-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.autocomplete-list .imdb-poster {
+  width: 34px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.autocomplete-list .imdb-poster-empty {
+  width: 34px;
+  height: 50px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+.autocomplete-list .imdb-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.autocomplete-list .imdb-title {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.autocomplete-list .imdb-year {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.autocomplete-hint {
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
