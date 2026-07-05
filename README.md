@@ -65,6 +65,30 @@ The back-end container automatically runs database migrations
 | Admin    | admin@example.com   | admin123 |
 | Customer | jan@example.com     | test123  |
 
+## API keys
+
+Two admin features — the **"Szukaj w IMDb"** (Search on IMDb) film autofill — use
+free third-party APIs. They are **optional**: if the keys are left empty the app
+runs normally and those lookups simply return nothing. Add the keys to your `.env`
+file:
+
+| Variable        | Used for                                  | Where to get a free key |
+| --------------- | ----------------------------------------- | ----------------------- |
+| `OMDB_API_KEY`  | Film metadata (poster, plot, year, rating) from IMDb | https://www.omdbapi.com/apikey.aspx |
+| `TMDB_API_KEY`  | YouTube trailer lookup                    | https://www.themoviedb.org/settings/api |
+
+Steps:
+
+1. **OMDb** — open https://www.omdbapi.com/apikey.aspx, pick the free tier, and
+   confirm the activation link sent to your email. Paste the key into
+   `OMDB_API_KEY`.
+2. **TMDb** — create a free account at https://www.themoviedb.org/, then request
+   an API key under https://www.themoviedb.org/settings/api. Paste it into
+   `TMDB_API_KEY`.
+
+After editing `.env`, restart the containers (`docker compose up --build`) so the
+back-end picks up the new values.
+
 ## Running locally (without Docker)
 
 ### Back-end
