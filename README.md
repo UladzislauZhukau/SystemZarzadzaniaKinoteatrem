@@ -112,21 +112,6 @@ npm install
 npm run dev
 ```
 
-### Background music
-
-The music toggle in the top-right corner plays the file
-`frontend/public/music/moonlight-haze.mp3`. The file is **not** included in the
-repository (it's third-party audio) — you need to add it yourself:
-
-1. Download the track **"Moonlight Haze" (Bird Creek)** — free from the
-   [YouTube Audio Library](https://www.youtube.com/audiolibrary) (no attribution
-   required).
-2. Save it as `moonlight-haze.mp3` in the `frontend/public/music/` folder.
-
-Without this file the toggle still works but plays no sound. To use a different
-track, replace the file and update the `MUSIC_SRC` constant in
-`frontend/src/components/MusicPlayer.jsx`.
-
 ## Tests
 
 ```bash
